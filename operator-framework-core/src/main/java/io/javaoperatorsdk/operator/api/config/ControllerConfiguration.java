@@ -2,11 +2,13 @@ package io.javaoperatorsdk.operator.api.config;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.javaoperatorsdk.operator.ControllerUtils;
+import io.javaoperatorsdk.operator.api.reconciler.DependentResource;
 import io.javaoperatorsdk.operator.processing.event.source.ResourceEventFilter;
 import io.javaoperatorsdk.operator.processing.event.source.ResourceEventFilters;
 
@@ -113,5 +115,10 @@ public interface ControllerConfiguration<R extends HasMetadata> {
    */
   default ResourceEventFilter<R> getEventFilter() {
     return ResourceEventFilters.passthrough();
+  }
+
+  @SuppressWarnings("rawtypes")
+  default List<DependentResource> getDependents() {
+    return Collections.emptyList();
   }
 }

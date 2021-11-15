@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.v1.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -64,7 +65,44 @@ public class Controller<R extends HasMetadata> implements Reconciler<R>,
 
   @Override
   public UpdateControl<R> reconcile(R resource, Context context) {
-    return configuration.getConfigurationService().getMetrics().timeControllerExecution(
+    final var metrics = configuration.getConfigurationService().getMetrics();
+
+    final var dependents = configuration.getDependents();
+    dependents.forEach(dependent -> {
+      final var conf = dependent.getConfiguration();
+
+      if (!conf.created() && !conf.updated()) {
+        return;
+      }
+
+      var dependentResource = dependent.fetchFor(resource);
+      if (conf.created() && dependentResource == null) {
+        // we need to create the dependent
+        dependentResource = dependent.build();
+
+        if (conf.owned()) {
+          final var metadata = resource.getMetadata();
+          final var updatedMetadata = new ObjectMetaBuilder(dependentResource.getMetadata())
+              .addNewOwnerReference()
+              .withUid(metadata.getUid())
+              .withApiVersion(resource.getApiVersion())
+              .withName(metadata.getName())
+              .withKind(resource.getKind())
+              .endOwnerReference().build();
+          dependentResource.setMetadata(updatedMetadata);
+        }
+
+      } else if (conf.updated()) {
+        dependentResource = dependent.update(dependentResource);
+      }
+
+      // send the changes to the cluster
+      // todo: would be nice to be able to update informer directly…
+      // todo: add metrics timing for dependent resource
+      kubernetesClient.resource(dependentResource).createOrReplace();
+    });
+
+    return metrics.timeControllerExecution(
         new ControllerExecution<>() {
           @Override
           public String name() {
