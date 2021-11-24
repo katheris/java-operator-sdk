@@ -18,7 +18,7 @@ public class DefaultControllerConfiguration<R extends HasMetadata>
   private final boolean watchAllNamespaces;
   private final RetryConfiguration retryConfiguration;
   private final String labelSelector;
-  private final ResourceEventFilter<R> resourceEventFilter;
+  private final ResourceEventFilter<R, ControllerConfiguration<R>> resourceEventFilter;
   private final Class<R> resourceClass;
   private ConfigurationService service;
 
@@ -31,7 +31,7 @@ public class DefaultControllerConfiguration<R extends HasMetadata>
       Set<String> namespaces,
       RetryConfiguration retryConfiguration,
       String labelSelector,
-      ResourceEventFilter<R> resourceEventFilter,
+      ResourceEventFilter<R, ControllerConfiguration<R>> resourceEventFilter,
       Class<R> resourceClass,
       ConfigurationService service) {
     this.associatedControllerClassName = associatedControllerClassName;
@@ -119,7 +119,7 @@ public class DefaultControllerConfiguration<R extends HasMetadata>
   }
 
   @Override
-  public ResourceEventFilter<R> getEventFilter() {
+  public ResourceEventFilter<R, ControllerConfiguration<R>> getEventFilter() {
     return resourceEventFilter;
   }
 }

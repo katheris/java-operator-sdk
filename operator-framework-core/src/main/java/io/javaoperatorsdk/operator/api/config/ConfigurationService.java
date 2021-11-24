@@ -40,8 +40,7 @@ public interface ConfigurationService {
    * @return the {@link ControllerConfiguration} associated with the specified controller or {@code
    * null} if no configuration exists for the controller
    */
-  <R extends HasMetadata> ControllerConfiguration<R> getConfigurationFor(
-      Reconciler<R> controller);
+  <R extends HasMetadata> ControllerConfiguration<R> getConfigurationFor(Reconciler<R> controller);
 
   /**
    * Retrieves the Kubernetes client configuration

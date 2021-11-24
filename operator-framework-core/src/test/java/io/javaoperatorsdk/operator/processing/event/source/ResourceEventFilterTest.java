@@ -154,23 +154,24 @@ class ResourceEventFilterTest {
 
   private static class TestControllerConfig extends ControllerConfig<TestCustomResource> {
     public TestControllerConfig(String finalizer, boolean generationAware,
-        ResourceEventFilter<TestCustomResource> eventFilter) {
+        ResourceEventFilter<TestCustomResource, ControllerConfiguration<TestCustomResource>> eventFilter) {
       super(finalizer, generationAware, eventFilter, TestCustomResource.class);
     }
   }
   private static class ObservedGenControllerConfig
       extends ControllerConfig<ObservedGenCustomResource> {
     public ObservedGenControllerConfig(String finalizer, boolean generationAware,
-        ResourceEventFilter<ObservedGenCustomResource> eventFilter) {
+        ResourceEventFilter<ObservedGenCustomResource, ControllerConfiguration<ObservedGenCustomResource>> eventFilter) {
       super(finalizer, generationAware, eventFilter, ObservedGenCustomResource.class);
     }
   }
 
-  private static class ControllerConfig<T extends HasMetadata> extends
-      DefaultControllerConfiguration<T> {
+  private static class ControllerConfig<T extends HasMetadata>
+      extends DefaultControllerConfiguration<T> {
 
     public ControllerConfig(String finalizer, boolean generationAware,
-        ResourceEventFilter<T> eventFilter, Class<T> customResourceClass) {
+        ResourceEventFilter<T, ControllerConfiguration<T>> eventFilter,
+        Class<T> customResourceClass) {
       super(
           null,
           null,

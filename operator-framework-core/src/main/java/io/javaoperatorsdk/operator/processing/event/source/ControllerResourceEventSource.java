@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.javaoperatorsdk.operator.MissingCRDException;
 import io.javaoperatorsdk.operator.api.config.ControllerConfiguration;
+import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
 import io.javaoperatorsdk.operator.processing.Controller;
 import io.javaoperatorsdk.operator.processing.MDCUtils;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
@@ -39,7 +40,7 @@ public class ControllerResourceEventSource<T extends HasMetadata> extends Abstra
   private final Map<String, SharedIndexInformer<T>> sharedIndexInformers =
       new ConcurrentHashMap<>();
 
-  private final ResourceEventFilter<T> filter;
+  private final ResourceEventFilter<T, ControllerConfiguration<T>> filter;
   private final OnceWhitelistEventFilterEventFilter<T> onceWhitelistEventFilterEventFilter;
   private final ControllerResourceCache<T> cache;
 
@@ -74,7 +75,7 @@ public class ControllerResourceEventSource<T extends HasMetadata> extends Abstra
     final var labelSelector = configuration.getLabelSelector();
 
     try {
-      if (ControllerConfiguration.allNamespacesWatched(targetNamespaces)) {
+      if (ResourceConfiguration.allNamespacesWatched(targetNamespaces)) {
         final var filteredBySelectorClient = client.inAnyNamespace()
             .withLabelSelector(labelSelector);
         final var informer =
@@ -125,19 +126,18 @@ public class ControllerResourceEventSource<T extends HasMetadata> extends Abstra
     }
   }
 
-  public void eventReceived(ResourceAction action, T customResource, T oldResource) {
+  public void eventReceived(ResourceAction action, T resource, T oldResource) {
     try {
       log.debug(
-          "Event received for resource: {}", getName(customResource));
-      MDCUtils.addResourceInfo(customResource);
-      if (filter.acceptChange(controller.getConfiguration(), oldResource, customResource)) {
-        eventHandler.handleEvent(
-            new ResourceEvent(action, ResourceID.fromResource(customResource)));
+          "Event received for resource: {}", getName(resource));
+      MDCUtils.addResourceInfo(resource);
+      if (filter.acceptChange(controller.getConfiguration(), oldResource, resource)) {
+        eventHandler.handleEvent(new ResourceEvent(action, ResourceID.fromResource(resource)));
       } else {
         log.debug(
             "Skipping event handling resource {} with version: {}",
-            getUID(customResource),
-            getVersion(customResource));
+            getUID(resource),
+            getVersion(resource));
       }
     } finally {
       MDCUtils.removeResourceInfo();
@@ -150,8 +150,8 @@ public class ControllerResourceEventSource<T extends HasMetadata> extends Abstra
   }
 
   @Override
-  public void onUpdate(T oldCustomResource, T newCustomResource) {
-    eventReceived(ResourceAction.UPDATED, newCustomResource, oldCustomResource);
+  public void onUpdate(T oldResource, T newResource) {
+    eventReceived(ResourceAction.UPDATED, newResource, oldResource);
   }
 
   @Override

@@ -1,124 +1,46 @@
 package io.javaoperatorsdk.operator.api.config;
 
-import java.lang.reflect.ParameterizedType;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.client.CustomResource;
 import io.javaoperatorsdk.operator.ControllerUtils;
 import io.javaoperatorsdk.operator.api.reconciler.DependentResource;
 import io.javaoperatorsdk.operator.processing.event.source.ResourceEventFilter;
-import io.javaoperatorsdk.operator.processing.event.source.ResourceEventFilters;
 
-public interface ControllerConfiguration<R extends HasMetadata> {
+public interface ControllerConfiguration<R extends HasMetadata> extends
+    ResourceConfiguration<R, ControllerConfiguration<R>> {
 
   default String getName() {
     return ControllerUtils.getDefaultReconcilerName(getAssociatedReconcilerClassName());
-  }
-
-  default String getResourceTypeName() {
-    return CustomResource.getCRDName(getResourceClass());
   }
 
   default String getFinalizer() {
     return ControllerUtils.getDefaultFinalizerName(getResourceTypeName());
   }
 
-  /**
-   * Retrieves the label selector that is used to filter which custom resources are actually watched
-   * by the associated controller. See
-   * https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ for more details on
-   * syntax.
-   *
-   * @return the label selector filtering watched custom resources
-   */
-  default String getLabelSelector() {
-    return null;
-  }
-
   default boolean isGenerationAware() {
     return true;
   }
 
-  default Class<R> getResourceClass() {
-    ParameterizedType type = (ParameterizedType) getClass().getGenericInterfaces()[0];
-    return (Class<R>) type.getActualTypeArguments()[0];
-  }
-
   String getAssociatedReconcilerClassName();
-
-  default Set<String> getNamespaces() {
-    return Collections.emptySet();
-  }
-
-  default boolean watchAllNamespaces() {
-    return allNamespacesWatched(getNamespaces());
-  }
-
-  static boolean allNamespacesWatched(Set<String> namespaces) {
-    return namespaces == null || namespaces.isEmpty();
-  }
-
-  default boolean watchCurrentNamespace() {
-    return currentNamespaceWatched(getNamespaces());
-  }
-
-  static boolean currentNamespaceWatched(Set<String> namespaces) {
-    return namespaces != null
-        && namespaces.size() == 1
-        && namespaces.contains(
-            io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration.WATCH_CURRENT_NAMESPACE);
-  }
-
-  /**
-   * Computes the effective namespaces based on the set specified by the user, in particular
-   * retrieves the current namespace from the client when the user specified that they wanted to
-   * watch the current namespace only.
-   *
-   * @return a Set of namespace names the associated controller will watch
-   */
-  default Set<String> getEffectiveNamespaces() {
-    var targetNamespaces = getNamespaces();
-    if (watchCurrentNamespace()) {
-      final var parent = getConfigurationService();
-      if (parent == null) {
-        throw new IllegalStateException(
-            "Parent ConfigurationService must be set before calling this method");
-      }
-      targetNamespaces = Collections.singleton(parent.getClientConfiguration().getNamespace());
-    }
-    return targetNamespaces;
-  }
 
   default RetryConfiguration getRetryConfiguration() {
     return RetryConfiguration.DEFAULT;
   }
-
-  ConfigurationService getConfigurationService();
-
-  default void setConfigurationService(ConfigurationService service) {}
 
   default boolean useFinalizer() {
     return !io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration.NO_FINALIZER
         .equals(getFinalizer());
   }
 
-  /**
-   * Allow controllers to filter events before they are provided to the
-   * {@link io.javaoperatorsdk.operator.processing.event.EventHandler}. Note that the provided
-   * filter is combined with {@link #isGenerationAware()} to compute the final set of filters that
-   * should be applied;
-   *
-   * @return filter
-   */
-  default ResourceEventFilter<R> getEventFilter() {
-    return ResourceEventFilters.passthrough();
-  }
-
   @SuppressWarnings("rawtypes")
   default List<DependentResource> getDependents() {
     return Collections.emptyList();
+  }
+
+  @Override
+  default ResourceEventFilter<R, ControllerConfiguration<R>> getEventFilter() {
+    return ResourceConfiguration.super.getEventFilter();
   }
 }

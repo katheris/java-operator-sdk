@@ -75,17 +75,17 @@ public class AnnotationConfiguration<R extends HasMetadata>
 
   @SuppressWarnings("unchecked")
   @Override
-  public ResourceEventFilter<R> getEventFilter() {
-    ResourceEventFilter<R> answer = null;
+  public ResourceEventFilter<R, io.javaoperatorsdk.operator.api.config.ControllerConfiguration<R>> getEventFilter() {
+    ResourceEventFilter<R, io.javaoperatorsdk.operator.api.config.ControllerConfiguration<R>> answer =
+        null;
 
-    Class<ResourceEventFilter<R>>[] filterTypes =
-        (Class<ResourceEventFilter<R>>[]) valueOrDefault(annotation,
-            ControllerConfiguration::eventFilters,
-            new Object[] {});
+    var filterTypes =
+        (Class<ResourceEventFilter<R, io.javaoperatorsdk.operator.api.config.ControllerConfiguration<R>>>[]) valueOrDefault(
+            annotation, ControllerConfiguration::eventFilters, new Object[] {});
     if (filterTypes.length > 0) {
       for (var filterType : filterTypes) {
         try {
-          ResourceEventFilter<R> filter = filterType.getConstructor().newInstance();
+          var filter = filterType.getConstructor().newInstance();
 
           if (answer == null) {
             answer = filter;
