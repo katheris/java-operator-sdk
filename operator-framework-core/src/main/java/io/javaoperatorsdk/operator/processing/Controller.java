@@ -135,7 +135,9 @@ public class Controller<R extends HasMetadata> implements Reconciler<R>,
 
   @Override
   public void prepareEventSources(EventSourceRegistry<R> eventSourceRegistry) {
-    throw new UnsupportedOperationException("This method should never be called directly");
+    if (reconciler instanceof EventSourceInitializer) {
+      ((EventSourceInitializer<R>) reconciler).prepareEventSources(eventSourceManager);
+    }
   }
 
   @Override
@@ -206,9 +208,7 @@ public class Controller<R extends HasMetadata> implements Reconciler<R>,
       }
 
       eventSourceManager = new EventSourceManager<>(this);
-      if (reconciler instanceof EventSourceInitializer) {
-        ((EventSourceInitializer<R>) reconciler).prepareEventSources(eventSourceManager);
-      }
+      prepareEventSources(eventSourceManager);
       if (failOnMissingCurrentNS()) {
         throw new OperatorException(
             "Controller '"
