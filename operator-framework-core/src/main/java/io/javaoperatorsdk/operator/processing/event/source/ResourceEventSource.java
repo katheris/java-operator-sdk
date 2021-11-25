@@ -1,6 +1,8 @@
 package io.javaoperatorsdk.operator.processing.event.internal;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,7 +30,7 @@ import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.get
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getUID;
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getVersion;
 
-public class ResourceEventSource<T extends HasMetadata, U extends ResourceConfiguration<T, U>>
+public abstract class ResourceEventSource<T extends HasMetadata, U extends ResourceConfiguration<T, U>>
     extends AbstractEventSource implements
     ResourceEventHandler<T>, ResourceCache<T> {
 
@@ -36,10 +38,20 @@ public class ResourceEventSource<T extends HasMetadata, U extends ResourceConfig
   private static final Logger log = LoggerFactory.getLogger(ResourceEventSource.class);
 
   private final Map<String, SharedIndexInformer<T>> informers = new ConcurrentHashMap<>();
-  private Cloner cloner;
-  private ResourceEventFilter<T, U> filter;
-  private U configuration;
-  private MixedOperation<T, KubernetesResourceList<T>, Resource<T>> client;
+  private final Cloner cloner;
+  private final ResourceEventFilter<T, U> filter;
+  private final U configuration;
+  private final MixedOperation<T, KubernetesResourceList<T>, Resource<T>> client;
+
+  public ResourceEventSource(U configuration,
+      MixedOperation<T, KubernetesResourceList<T>, Resource<T>> client, Cloner cloner) {
+    this.configuration = configuration;
+    this.client = client;
+    this.filter = initFilter(configuration);
+    this.cloner = cloner;
+  }
+
+  protected abstract ResourceEventFilter<T, U> initFilter(U configuration);
 
   void eventReceived(ResourceAction action, T resource, T oldResource) {
     log.debug("Event received for resource: {}", getName(resource));
@@ -134,4 +146,17 @@ public class ResourceEventSource<T extends HasMetadata, U extends ResourceConfig
             resourceID.getName()));
     return Optional.ofNullable(cloner.clone(resource));
   }
+
+  /**
+   * @return shared informers by namespace. If custom resource is not namespace scoped use
+   *         CustomResourceEventSource.ANY_NAMESPACE_MAP_KEY
+   */
+  public Map<String, SharedIndexInformer<T>> getInformers() {
+    return Collections.unmodifiableMap(informers);
+  }
+
+  public SharedIndexInformer<T> getInformer(String namespace) {
+    return informers.get(Objects.requireNonNullElse(namespace, ANY_NAMESPACE_MAP_KEY));
+  }
+
 }
