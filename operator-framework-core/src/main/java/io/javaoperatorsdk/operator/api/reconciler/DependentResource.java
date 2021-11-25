@@ -1,6 +1,7 @@
 package io.javaoperatorsdk.operator.api.reconciler;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
 import io.javaoperatorsdk.operator.processing.event.internal.InformerEventSource;
 
 public interface DependentResource<R extends HasMetadata> {
@@ -14,13 +15,14 @@ public interface DependentResource<R extends HasMetadata> {
     return source().getAssociated(owner);
   }
 
-  Configuration getConfiguration();
+  Configuration<R> getConfiguration();
 
   default R update(R fetched) {
     return fetched;
   }
 
-  interface Configuration {
+  interface Configuration<R extends HasMetadata>
+      extends ResourceConfiguration<R, Configuration<R>> {
     default boolean created() {
       return true;
     }
