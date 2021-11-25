@@ -11,14 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.cache.Cache;
-import io.javaoperatorsdk.operator.MissingCRDException;
 import io.javaoperatorsdk.operator.OperatorException;
 import io.javaoperatorsdk.operator.api.config.Cloner;
 import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
@@ -85,34 +83,20 @@ public abstract class ResourceEventSource<T extends HasMetadata, U extends Resou
     final var targetNamespaces = configuration.getEffectiveNamespaces();
     final var labelSelector = configuration.getLabelSelector();
 
-    try {
-      if (ResourceConfiguration.allNamespacesWatched(targetNamespaces)) {
-        final var filteredBySelectorClient =
-            client.inAnyNamespace().withLabelSelector(labelSelector);
-        final var informer =
-            createAndRunInformerFor(filteredBySelectorClient, ANY_NAMESPACE_MAP_KEY);
-        log.debug("Registered {} -> {} for any namespace", this, informer);
-      } else {
-        targetNamespaces.forEach(
-            ns -> {
-              final var informer = createAndRunInformerFor(
-                  client.inNamespace(ns).withLabelSelector(labelSelector), ns);
-              log.debug("Registered {} -> {} for namespace: {}", this, informer,
-                  ns);
-            });
-      }
-    } catch (Exception e) {
-      if (e instanceof KubernetesClientException) {
-        KubernetesClientException ke = (KubernetesClientException) e;
-        if (404 == ke.getCode()) {
-          // only throw MissingCRDException if the 404 error occurs on the target CRD
-          final var targetCRDName = configuration.getResourceTypeName();
-          if (targetCRDName.equals(ke.getFullResourceName())) {
-            throw new MissingCRDException(targetCRDName, null, e.getMessage(), e);
-          }
-        }
-      }
-      throw e;
+    if (ResourceConfiguration.allNamespacesWatched(targetNamespaces)) {
+      final var filteredBySelectorClient =
+          client.inAnyNamespace().withLabelSelector(labelSelector);
+      final var informer =
+          createAndRunInformerFor(filteredBySelectorClient, ANY_NAMESPACE_MAP_KEY);
+      log.debug("Registered {} -> {} for any namespace", this, informer);
+    } else {
+      targetNamespaces.forEach(
+          ns -> {
+            final var informer = createAndRunInformerFor(
+                client.inNamespace(ns).withLabelSelector(labelSelector), ns);
+            log.debug("Registered {} -> {} for namespace: {}", this, informer,
+                ns);
+          });
     }
   }
 
