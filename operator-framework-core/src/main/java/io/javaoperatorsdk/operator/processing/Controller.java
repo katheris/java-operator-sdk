@@ -13,6 +13,7 @@ import io.javaoperatorsdk.operator.CustomResourceUtils;
 import io.javaoperatorsdk.operator.MissingCRDException;
 import io.javaoperatorsdk.operator.OperatorException;
 import io.javaoperatorsdk.operator.api.config.ControllerConfiguration;
+import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
 import io.javaoperatorsdk.operator.api.monitoring.Metrics.ControllerExecution;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
@@ -21,6 +22,8 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.javaoperatorsdk.operator.processing.event.source.EventSourceRegistry;
+import io.javaoperatorsdk.operator.processing.event.internal.ResourceEventFilter;
+import io.javaoperatorsdk.operator.processing.event.internal.ResourceEventSource;
 
 public class Controller<R extends HasMetadata> implements Reconciler<R>,
     LifecycleAware, EventSourceInitializer<R> {
@@ -134,6 +137,18 @@ public class Controller<R extends HasMetadata> implements Reconciler<R>,
 
   @Override
   public void prepareEventSources(EventSourceRegistry<R> eventSourceRegistry) {
+    final var cloner = configuration.getConfigurationService().getResourceCloner();
+    getDependentResources().forEach(dependent -> {
+      final var dependentConfiguration = dependent.getConfiguration();
+      eventSourceRegistry.registerEventSource(new ResourceEventSource<>(configuration,
+          kubernetesClient.resources(dependentConfiguration.getResourceClass()), cloner) {
+        @Override
+        protected ResourceEventFilter initFilter(ResourceConfiguration configuration) {
+          return configuration.getEventFilter();
+        }
+      });
+    });
+
     if (reconciler instanceof EventSourceInitializer) {
       ((EventSourceInitializer<R>) reconciler).prepareEventSources(eventSourceManager);
     }
