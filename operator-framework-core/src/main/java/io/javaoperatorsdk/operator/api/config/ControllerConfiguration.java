@@ -1,11 +1,7 @@
 package io.javaoperatorsdk.operator.api.config;
 
-import java.util.Collections;
-import java.util.List;
-
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.javaoperatorsdk.operator.ControllerUtils;
-import io.javaoperatorsdk.operator.api.reconciler.DependentResource;
 import io.javaoperatorsdk.operator.processing.event.source.ResourceEventFilter;
 
 public interface ControllerConfiguration<R extends HasMetadata> extends
@@ -32,11 +28,6 @@ public interface ControllerConfiguration<R extends HasMetadata> extends
   default boolean useFinalizer() {
     return !io.javaoperatorsdk.operator.api.reconciler.ControllerConfiguration.NO_FINALIZER
         .equals(getFinalizer());
-  }
-
-  @SuppressWarnings("rawtypes")
-  default List<DependentResource> getDependents() {
-    return Collections.emptyList();
   }
 
   @Override

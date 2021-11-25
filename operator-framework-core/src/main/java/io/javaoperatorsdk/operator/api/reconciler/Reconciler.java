@@ -1,5 +1,8 @@
 package io.javaoperatorsdk.operator.api.reconciler;
 
+import java.util.Collections;
+import java.util.List;
+
 import io.fabric8.kubernetes.api.model.HasMetadata;
 
 public interface Reconciler<R extends HasMetadata> {
@@ -48,4 +51,7 @@ public interface Reconciler<R extends HasMetadata> {
    */
   UpdateControl<R> reconcile(R resource, Context context);
 
+  default List<DependentResource> getDependentResources() {
+    return Collections.emptyList();
+  }
 }

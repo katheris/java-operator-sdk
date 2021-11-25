@@ -67,8 +67,7 @@ public class Controller<R extends HasMetadata> implements Reconciler<R>,
   public UpdateControl<R> reconcile(R resource, Context context) {
     final var metrics = configuration.getConfigurationService().getMetrics();
 
-    final var dependents = configuration.getDependents();
-    dependents.forEach(dependent -> {
+    getDependentResources().forEach(dependent -> {
       final var conf = dependent.getConfiguration();
 
       if (!conf.created() && !conf.updated()) {
