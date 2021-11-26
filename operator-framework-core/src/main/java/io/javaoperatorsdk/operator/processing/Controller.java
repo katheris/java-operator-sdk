@@ -22,8 +22,8 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.EventSourceManager;
 import io.javaoperatorsdk.operator.processing.event.source.EventSourceRegistry;
-import io.javaoperatorsdk.operator.processing.event.internal.ResourceEventFilter;
-import io.javaoperatorsdk.operator.processing.event.internal.ResourceEventSource;
+import io.javaoperatorsdk.operator.processing.event.source.ResourceEventFilter;
+import io.javaoperatorsdk.operator.processing.event.source.ResourceEventSource;
 
 public class Controller<R extends HasMetadata> implements Reconciler<R>,
     LifecycleAware, EventSourceInitializer<R> {

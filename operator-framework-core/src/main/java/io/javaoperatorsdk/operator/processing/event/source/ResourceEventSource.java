@@ -1,4 +1,4 @@
-package io.javaoperatorsdk.operator.processing.event.internal;
+package io.javaoperatorsdk.operator.processing.event.source;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,7 +21,6 @@ import io.javaoperatorsdk.operator.OperatorException;
 import io.javaoperatorsdk.operator.api.config.Cloner;
 import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
 import io.javaoperatorsdk.operator.processing.ResourceCache;
-import io.javaoperatorsdk.operator.processing.event.AbstractEventSource;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
 
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getName;

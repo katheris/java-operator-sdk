@@ -2,7 +2,7 @@ package io.javaoperatorsdk.operator.api.reconciler;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
-import io.javaoperatorsdk.operator.processing.event.internal.InformerEventSource;
+import io.javaoperatorsdk.operator.processing.event.source.InformerEventSource;
 
 public interface DependentResource<R extends HasMetadata> {
   String getName();
