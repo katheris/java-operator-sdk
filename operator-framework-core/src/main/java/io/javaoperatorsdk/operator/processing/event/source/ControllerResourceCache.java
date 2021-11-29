@@ -45,19 +45,12 @@ public class ControllerResourceCache<T extends HasMetadata> implements ResourceC
 
   @Override
   public Optional<T> get(ResourceID resourceID) {
-    var sharedIndexInformer = sharedIndexInformers.get(ANY_NAMESPACE_MAP_KEY);
-    if (sharedIndexInformer == null) {
-      sharedIndexInformer =
-          sharedIndexInformers.get(resourceID.getNamespace().orElse(ANY_NAMESPACE_MAP_KEY));
-    }
-    var resource = sharedIndexInformer.getStore()
+    final var informer = sharedIndexInformers.get(
+        resourceID.getNamespace().orElse(ANY_NAMESPACE_MAP_KEY));
+    final var resource = informer.getStore()
         .getByKey(Cache.namespaceKeyFunc(resourceID.getNamespace().orElse(null),
             resourceID.getName()));
-    if (resource == null) {
-      return Optional.empty();
-    } else {
-      return Optional.of(cloner.clone(resource));
-    }
+    return Optional.ofNullable(cloner.clone(resource));
   }
 
   private boolean isWatchingAllNamespaces() {

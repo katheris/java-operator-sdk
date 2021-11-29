@@ -3,7 +3,6 @@ package io.javaoperatorsdk.operator.processing.event.source;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -16,11 +15,9 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
-import io.fabric8.kubernetes.client.informers.cache.Cache;
 import io.javaoperatorsdk.operator.OperatorException;
 import io.javaoperatorsdk.operator.api.config.Cloner;
 import io.javaoperatorsdk.operator.api.config.ResourceConfiguration;
-import io.javaoperatorsdk.operator.processing.ResourceCache;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
 
 import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.getName;
@@ -29,13 +26,13 @@ import static io.javaoperatorsdk.operator.processing.KubernetesResourceUtils.get
 
 public abstract class ResourceEventSource<T extends HasMetadata, U extends ResourceConfiguration<T, U>>
     extends AbstractEventSource implements
-    ResourceEventHandler<T>, ResourceCache<T> {
+    ResourceEventHandler<T> {
 
   private static final String ANY_NAMESPACE_MAP_KEY = "anyNamespace";
   private static final Logger log = LoggerFactory.getLogger(ResourceEventSource.class);
 
   private final Map<String, SharedIndexInformer<T>> informers = new ConcurrentHashMap<>();
-  private final Cloner cloner;
+  private final ControllerResourceCache<T> cache;
   private final ResourceEventFilter<T, U> filter;
   private final U configuration;
   private final MixedOperation<T, KubernetesResourceList<T>, Resource<T>> client;
@@ -45,7 +42,7 @@ public abstract class ResourceEventSource<T extends HasMetadata, U extends Resou
     this.configuration = configuration;
     this.client = client;
     this.filter = initFilter(configuration);
-    this.cloner = cloner;
+    this.cache = new ControllerResourceCache<>(informers, cloner);
   }
 
   protected abstract ResourceEventFilter<T, U> initFilter(U configuration);
@@ -120,14 +117,8 @@ public abstract class ResourceEventSource<T extends HasMetadata, U extends Resou
     }
   }
 
-  @Override
-  public Optional<T> getCustomResource(ResourceID resourceID) {
-    final var informer = informers.get(
-        resourceID.getNamespace().orElse(ANY_NAMESPACE_MAP_KEY));
-    final var resource = informer.getStore()
-        .getByKey(Cache.namespaceKeyFunc(resourceID.getNamespace().orElse(null),
-            resourceID.getName()));
-    return Optional.ofNullable(cloner.clone(resource));
+  public ControllerResourceCache<T> getResourceCache() {
+    return cache;
   }
 
   /**
